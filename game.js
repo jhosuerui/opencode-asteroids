@@ -31,7 +31,7 @@ const randInt = (min, max) => Math.floor(rand(min, max + 1));
 
 // ── Bullet ────────────────────────────────────────────────────────────────────
 class Bullet {
-  constructor(x, y, angle) {
+  constructor(x, y, angle, color = '#fff') {
     this.x = x;
     this.y = y;
     const SPEED = 520;
@@ -39,6 +39,7 @@ class Bullet {
     this.vy = Math.sin(angle) * SPEED;
     this.ttl  = 1.1;
     this.radius = 2;
+    this.color = color;
     this.dead = false;
   }
 
@@ -50,7 +51,7 @@ class Bullet {
   }
 
   draw() {
-    ctx.fillStyle = '#fff';
+    ctx.fillStyle = this.color;
     ctx.beginPath();
     ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
     ctx.fill();
@@ -258,6 +259,7 @@ class Ship {
     this.shootCooldown = 0;
     this.speedTimer    = 0;   // tiempo restante del power-up de velocidad
     this.shieldTimer   = 0;   // tiempo restante del escudo
+    this.tripleTimer   = 0;   // tiempo restante del disparo triple (tecla T)
     this.dead          = false;
   }
 
@@ -267,6 +269,7 @@ class Ship {
     if (this.shootCooldown > 0) this.shootCooldown -= dt;
     if (this.speedTimer    > 0) this.speedTimer    -= dt;
     if (this.shieldTimer   > 0) this.shieldTimer   -= dt;
+    if (this.tripleTimer   > 0) this.tripleTimer   -= dt;
 
     const boost  = this.speedTimer > 0 ? 2 : 1;  // power-up de velocidad: ×2
     const ROT   = 3.5 * boost;   // rad/s
@@ -294,6 +297,17 @@ class Ship {
     const NOSE = SKINS[skinIndex].nariz;
     const ox = this.x + Math.cos(this.angle) * NOSE;
     const oy = this.y + Math.sin(this.angle) * NOSE;
+
+    // Disparo triple: 3 balas paralelas en línea recta (mismo ángulo, sin abanico),
+    // desfasadas perpendicularmente a la nariz. Se pintan de amarillo mientras dura.
+    if (this.tripleTimer > 0) {
+      const px = Math.cos(this.angle + Math.PI / 2);   // dirección perpendicular
+      const py = Math.sin(this.angle + Math.PI / 2);
+      const GAP = 6;
+      return [-GAP, 0, GAP].map(off =>
+        new Bullet(ox + px * off, oy + py * off, this.angle, '#ff0'));
+    }
+
     return [new Bullet(ox, oy, this.angle)];
   }
 
@@ -383,6 +397,7 @@ const POWERUP_TTL     = 10;   // segundos que el ítem permanece en el mapa
 const SPEEDUP_DUR     = 5;    // duración del efecto de velocidad en la nave
 const SHIELD_DUR      = 5;    // duración del escudo en la nave
 const SHIELD_RADIUS   = 24;   // radio de protección del escudo
+const TRIPLE_DUR      = 5;    // duración del disparo triple activado con T
 
 class PowerUp {
   constructor(x, y, kind = 'speed') {
@@ -557,6 +572,9 @@ function update(dt) {
     return;
   }
 
+  // Activar disparo triple con T (5 s; pulsar de nuevo refresca el temporizador)
+  if (pressed('KeyT')) ship.tripleTimer = TRIPLE_DUR;
+
   // Disparar
   if (pressed('Space')) {
     bullets.push(...ship.tryShoot());
@@ -690,14 +708,26 @@ function drawHUD() {
   for (let i = 0; i < lives; i++)
     drawLifeIcon(W - 16 - i * 22, 18);
 
-  // Barra de tiempo restante del power-up de velocidad
+  // Barras de tiempo restante de los efectos activos (apiladas si coinciden)
+  let barY = 46;
   if (!ship.dead && ship.speedTimer > 0) {
     const w = 100 * (ship.speedTimer / SPEEDUP_DUR);
     ctx.fillStyle = '#0ff';
     ctx.font = '11px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText('VELOCIDAD', 14, 46);
-    ctx.fillRect(14, 52, w, 4);
+    ctx.fillText('VELOCIDAD', 14, barY);
+    ctx.fillRect(14, barY + 6, w, 4);
+    barY += 20;
+  }
+
+  if (!ship.dead && ship.tripleTimer > 0) {
+    const w = 100 * (ship.tripleTimer / TRIPLE_DUR);
+    ctx.fillStyle = '#ff0';
+    ctx.font = '11px monospace';
+    ctx.textAlign = 'left';
+    ctx.fillText('TRIPLE', 14, barY);
+    ctx.fillRect(14, barY + 6, w, 4);
+    barY += 20;
   }
 
   // Barra de tiempo restante del escudo
@@ -706,8 +736,9 @@ function drawHUD() {
     ctx.fillStyle = '#0f0';
     ctx.font = '11px monospace';
     ctx.textAlign = 'left';
-    ctx.fillText('ESCUDO', 14, 70);
-    ctx.fillRect(14, 76, w, 4);
+    ctx.fillText('ESCUDO', 14, barY);
+    ctx.fillRect(14, barY + 6, w, 4);
+    barY += 20;
   }
 
 }

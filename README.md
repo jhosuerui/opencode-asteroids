@@ -30,6 +30,7 @@ Luego visita `http://localhost:3000`.
 | `↑`       | Propulsar  |
 | `Espacio` | Disparar   |
 | `S`       | Cambiar skin de la nave (funciona en cualquier momento; se recuerda entre sesiones) |
+| `T`       | Activar disparo triple durante 5 s (pulsar de nuevo refresca el temporizador) |
 
 ## Puntuación
 
@@ -50,3 +51,4 @@ Luego visita `http://localhost:3000`.
 - **Estrella fugaz**: aparece aleatoriamente cada 10–16 s, cruza la pantalla a gran velocidad y se desvanece a los 6 s; destruirla vale 250 puntos, pero choca contra la nave como un asteroide
 - Niveles progresivos: más asteroides en cada nivel
 - **Skins de nave**: 5 siluetas con colores propios (Clásica, Dardo, Ígnea, Esmeralda y Dorada); se ciclan con `S` en cualquier momento y la elección se guarda en `localStorage`
+- **Disparo triple**: se activa con `T` durante 5 s; lanza 3 balas paralelas en línea recta (amarillas) desde la nariz de la nave, con barra de tiempo en el HUD; pulsar `T` de nuevo refresca el temporizador
